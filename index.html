@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>أكاديمية الحريف لكرة القدم</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div class="login-wrap" id="loginView">
+  <div class="shape shape-1"></div>
+  <div class="shape shape-2"></div>
+  <div class="shape shape-3"></div>
+  <div class="shape shape-4"></div>
+
+  <div class="login-card">
+    <div class="badge">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+    </div>
+    <h1>أهلاً بك</h1>
+    <p class="sub">أكاديمية الحريف لكرة القدم — تسجيل دخول صاحب الحساب</p>
+
+    <form id="loginForm" novalidate>
+      <div class="input-group">
+        <input type="email" id="loginEmail" placeholder=" " autocomplete="email" required>
+        <label for="loginEmail">البريد الإلكتروني</label>
+        <span class="focus-line"></span>
+      </div>
+
+      <div class="input-group">
+        <input type="password" id="loginPassword" placeholder=" " autocomplete="current-password" required>
+        <label for="loginPassword">كلمة المرور</label>
+        <button type="button" class="toggle-eye" id="toggleEye" aria-label="إظهار أو إخفاء كلمة المرور">
+          <svg class="icon" id="eyeIcon" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <span class="focus-line"></span>
+      </div>
+
+      <div class="opt-row">
+        <label class="remember">
+          <input type="checkbox" id="remember">
+          <span>تذكرني</span>
+        </label>
+        <a href="#" class="forgot" id="forgotLink">نسيت كلمة المرور؟</a>
+      </div>
+
+      <p class="err-msg" id="loginErr"></p>
+
+      <button type="submit" class="btn-main">تسجيل الدخول</button>
+    </form>
+
+    <p class="login-note">الدخول مقتصر على صاحب الحساب فقط</p>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app" id="appView">
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l3.5 2.5-1.3 4.1H9.8L8.5 9.5 12 7z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h2>أكاديمية الحريف</h2>
+        <span>إدارة الأعضاء</span>
+      </div>
+    </div>
+    <button class="icon-btn" id="logoutBtn" aria-label="تسجيل الخروج">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+  </div>
+
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-num" id="statTotal">0</div>
+        <div class="stat-label">إجمالي الأعضاء</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statAvgAge">0</div>
+        <div class="stat-label">متوسط الأعمار</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statMonth">0</div>
+        <div class="stat-label">جدد هذا الشهر</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statTodayPresent">0</div>
+        <div class="stat-label">حاضرين النهارده</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head" id="addPanelHead">
+        <h3>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          إضافة عضو جديد
+        </h3>
+        <svg class="icon chev open" id="addChev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="panel-body open" id="addPanelBody">
+        <form id="addForm" novalidate>
+          <div class="form-grid">
+            <div class="field-group full">
+              <label class="top" for="mName">الاسم الكامل</label>
+              <input type="text" id="mName" placeholder="مثال: محمد أحمد">
+              <div class="field-err" id="errName"></div>
+            </div>
+            <div class="field-group">
+              <label class="top" for="mAge">العمر</label>
+              <input type="number" id="mAge" placeholder="مثال: 14" min="4" max="60">
+              <div class="field-err" id="errAge"></div>
+            </div>
+            <div class="field-group">
+              <label class="top" for="mPhone">رقم الهاتف</label>
+              <input type="tel" id="mPhone" placeholder="01xxxxxxxxx">
+              <div class="field-err" id="errPhone"></div>
+            </div>
+            <div class="field-group full">
+              <label class="top" for="mPos">المركز</label>
+              <select id="mPos">
+                <option value="">— اختر المركز (اختياري) —</option>
+                <option value="حارس مرمى">حارس مرمى</option>
+                <option value="مدافع">مدافع</option>
+                <option value="وسط">وسط ميدان</option>
+                <option value="مهاجم">مهاجم</option>
+              </select>
+            </div>
+            <div class="full">
+              <button type="submit" class="add-btn">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                إضافة العضو
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head" id="bkPanelHead">
+        <h3>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+          نسخة احتياطية
+        </h3>
+        <svg class="icon chev" id="bkChev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="panel-body" id="bkPanelBody">
+        <p class="bk-note">البيانات محفوظة في هذا المتصفح فقط. لو هتفتح الموقع من متصفح أو جهاز تاني، صدّر نسخة احتياطية من هنا واستوردها هناك عشان الأعضاء ما يضيعوش.</p>
+        <div class="bk-row">
+          <button type="button" class="bk-btn" id="exportBtn">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+            تصدير نسخة احتياطية
+          </button>
+          <button type="button" class="bk-btn" id="importBtn">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 21h16"/></svg>
+            استيراد نسخة احتياطية
+          </button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="ابحث بالاسم أو الكود أو رقم الهاتف...">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    </div>
+
+    <div class="member-list" id="memberList"></div>
+
+    <div class="empty" id="emptyState" style="display:none;">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2"/><path d="M16 3.5a4 4 0 010 7"/></svg>
+      <p>لا يوجد أعضاء بعد — أضف أول عضو في الأكاديمية</p>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-bg" id="editModalBg">
+  <div class="modal">
+    <h3>تعديل بيانات العضو</h3>
+    <p class="code-line">كود العضو: <b id="editCodeShow"></b></p>
+    <div class="grid2">
+      <div class="field-group full">
+        <label class="top">الاسم الكامل</label>
+        <input type="text" id="editName">
+      </div>
+      <div class="field-group">
+        <label class="top">العمر</label>
+        <input type="number" id="editAge" min="4" max="60">
+      </div>
+      <div class="field-group">
+        <label class="top">رقم الهاتف</label>
+        <input type="tel" id="editPhone">
+      </div>
+      <div class="field-group full">
+        <label class="top">المركز</label>
+        <select id="editPos">
+          <option value="">— بدون —</option>
+          <option value="حارس مرمى">حارس مرمى</option>
+          <option value="مدافع">مدافع</option>
+          <option value="وسط">وسط ميدان</option>
+          <option value="مهاجم">مهاجم</option>
+        </select>
+      </div>
+    </div>
+    <p class="field-err" id="editErr" style="text-align:center;margin-bottom:6px;"></p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="editCancel">إلغاء</button>
+      <button class="btn-save" id="editSave">حفظ التعديل</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-bg" id="delModalBg">
+  <div class="modal">
+    <h3>حذف العضو</h3>
+    <p class="confirm-text">هل أنت متأكد من حذف <b id="delName"></b> من سجل الأكاديمية؟ لا يمكن التراجع عن هذا الإجراء.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="delCancel">إلغاء</button>
+      <button class="btn-danger" id="delConfirm">نعم، احذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance & Daily Rating Modal -->
+<div class="modal-bg" id="trackModalBg">
+  <div class="modal track-modal">
+    <button type="button" class="modal-close" id="trackClose" aria-label="إغلاق">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <h3 id="trackName">—</h3>
+    <p class="code-line">كود العضو: <b id="trackCode"></b></p>
+
+    <div class="tab-row">
+      <button type="button" class="tab-btn on" id="trackTabAtt">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        الحضور والغياب
+      </button>
+      <button type="button" class="tab-btn" id="trackTabRate">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z"/></svg>
+        التقييم اليومي
+      </button>
+    </div>
+
+    <!-- Attendance pane -->
+    <div id="trackPaneAtt">
+      <div class="track-summary">
+        <span>نسبة الحضور الكلية</span>
+        <b id="attRateNum">—</b>
+      </div>
+      <div class="att-today" id="attTodayState"></div>
+      <div class="hist-list" id="attHistory"></div>
+    </div>
+
+    <!-- Rating pane -->
+    <div id="trackPaneRate" style="display:none;">
+      <div class="track-summary">
+        <span>متوسط التقييم</span>
+        <b id="ratingAvgNum">—</b>
+      </div>
+      <div class="rate-input">
+        <label class="top" for="ratingScore">تقييم النهارده (من 10): <span id="ratingScoreOut">7</span></label>
+        <input type="range" id="ratingScore" min="1" max="10" step="1" value="7">
+      </div>
+      <div class="field-group full">
+        <label class="top" for="ratingNote">ملاحظة (اختياري)</label>
+        <input type="text" id="ratingNote" placeholder="مثال: تحسّن كبير في التمركز">
+      </div>
+      <button type="button" class="add-btn" id="ratingSave">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        حفظ تقييم اليوم
+      </button>
+      <div class="hist-list" id="ratingHistory"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script.js"></script>
+</body>
+</html>
