@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>أكاديمية الحريف لكرة القدم</title>
 
+<meta name="theme-color" content="#eef1f6">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Cairo:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@800;900&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 </head>
@@ -78,6 +80,10 @@
   </div>
 
   <div class="wrap">
+    <button type="button" class="scan-cta" id="scanOpen">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/></svg>
+      <span>مسح كارنيه وتسجيل الحضور<small>وجّه الكاميرا على الـQR — من غير بحث</small></span>
+    </button>
     <div class="stats">
       <div class="stat-card">
         <div class="stat-num" id="statTotal">0</div>
@@ -153,7 +159,7 @@
         <svg class="icon chev" id="bkChev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
       </div>
       <div class="panel-body" id="bkPanelBody">
-        <p class="bk-note">البيانات محفوظة في هذا المتصفح فقط. لو هتفتح الموقع من متصفح أو جهاز تاني، صدّر نسخة احتياطية من هنا واستوردها هناك عشان الأعضاء ما يضيعوش.</p>
+        <p class="bk-note">البيانات محفوظة على السحابة ومتزامنة مع كل أجهزتك. النسخة الاحتياطية للحفظ الإضافي أو لنقل بيانات قديمة.</p>
         <div class="bk-row">
           <button type="button" class="bk-btn" id="exportBtn">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
@@ -284,9 +290,39 @@
   </div>
 </div>
 
+<!-- QR Scanner Modal -->
+<div class="modal-bg" id="scanModalBg">
+  <div class="modal scan-modal">
+    <button type="button" class="modal-close" id="scanClose" aria-label="إغلاق">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <h3>مسح كارنيه اللاعب</h3>
+    <p class="code-line">الحضور بيتسجل تلقائي أول ما الكاميرا تقرأ الكود</p>
+    <div class="scan-view"><div id="scanReader"></div></div>
+    <div class="scan-result" id="scanResult" aria-live="polite">جاهز للمسح</div>
+    <div class="scan-manual"><input type="text" id="scanManual" placeholder="أو اكتب الكود (HRF-0001) واضغط Enter" autocomplete="off"></div>
+    <p class="scan-count">اتسجل في الجلسة دي: <b id="scanCount">0</b></p>
+  </div>
+</div>
+
+<!-- Member ID Card Modal -->
+<div class="modal-bg" id="cardModalBg">
+  <div class="modal card-modal">
+    <button type="button" class="modal-close" id="cardClose" aria-label="إغلاق">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <h3>كارنيه اللاعب</h3>
+    <img id="cardImg" alt="كارنيه اللاعب مع كود QR">
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cardPrint">طباعة</button>
+      <button class="btn-save" id="cardDownload">تنزيل الصورة</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="script.js"></script>
 </body>
 </html>

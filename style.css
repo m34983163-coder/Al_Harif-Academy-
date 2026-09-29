@@ -323,3 +323,47 @@ h1,h2,h3,.brand-text h2,.btn-main,.stat-num,.code-badge{font-family:"Cairo", san
 @media (prefers-reduced-motion: reduce){
   .shape,.focus-line,.modal{animation:none!important;}
 }
+
+/* ================= ماسح QR + الكارنيه + تحسينات ================= */
+/* إصلاح المظهر الداكن: تدرّج الأزرار ثابت عشان النص الأبيض يفضل مقروء */
+.add-btn,.btn-save,.tab-btn.on,.avatar,.scan-cta{background:linear-gradient(135deg,#15305c,#2f5fdb);}
+.btn-main:hover{background:linear-gradient(135deg,#15305c,#2f5fdb);}
+:where(button,input,select,a):focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+button{-webkit-tap-highlight-color:transparent;}
+.m-actions button{width:38px;height:38px;}
+.m-actions button.qr:hover{color:var(--blue);}
+.member-card{content-visibility:auto;contain-intrinsic-size:auto 100px;}
+.member-card.present-today{box-shadow:var(--raised-xs), inset -4px 0 0 #2ebd7e;}
+
+.scan-cta{width:100%;min-height:68px;border:none;border-radius:20px;margin-bottom:18px;cursor:pointer;color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:14px;text-align:right;
+  font-family:"Cairo",sans-serif;font-weight:800;font-size:16px;box-shadow:0 12px 26px rgba(47,95,219,.32);transition:transform .2s ease;}
+.scan-cta:active{transform:scale(.98);}
+.scan-cta .icon{width:30px;height:30px;flex:none;}
+.scan-cta small{display:block;font-family:"Tajawal",sans-serif;font-size:11px;font-weight:500;opacity:.85;margin-top:2px;}
+
+.scan-modal{max-width:460px;position:relative;max-height:94vh;overflow-y:auto;}
+.scan-view{border-radius:20px;overflow:hidden;background:#0b1220;min-height:250px;margin-bottom:12px;}
+#scanReader{border:none!important;}
+#scanReader video{width:100%!important;display:block;object-fit:cover;}
+.scan-result{min-height:62px;border-radius:16px;padding:12px 14px;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-weight:800;font-size:14px;line-height:1.6;background:var(--bg);box-shadow:var(--pressed-sm);color:var(--muted);transition:background .2s,color .2s;}
+.scan-result.ok{background:rgba(46,170,110,.16);color:#1f9d63;box-shadow:none;}
+.scan-result.warn{background:rgba(230,160,30,.16);color:#c98a12;box-shadow:none;}
+.scan-result.err{background:rgba(209,69,61,.14);color:var(--danger);box-shadow:none;}
+.scan-manual{margin:12px 0 8px;}
+.scan-manual input{width:100%;height:46px;padding:0 14px;border:none;outline:none;border-radius:14px;background:var(--bg);
+  box-shadow:var(--pressed-sm);font-family:inherit;font-size:13px;color:var(--text);text-align:center;}
+.scan-count{text-align:center;font-size:11.5px;color:var(--muted);}
+.scan-count b{color:var(--blue);font-family:"Cairo",sans-serif;}
+
+.card-modal{max-width:400px;position:relative;}
+.card-modal img{display:block;width:100%;max-width:280px;min-height:200px;margin:8px auto 16px;border-radius:16px;box-shadow:var(--raised-sm);background:#fff;}
+
+@media print{
+  body.printing-card > *:not(#cardModalBg){display:none!important;}
+  body.printing-card .modal-close,body.printing-card .modal-actions,body.printing-card .card-modal h3{display:none!important;}
+  body.printing-card .modal-bg{position:static;background:none;backdrop-filter:none;display:block;}
+  body.printing-card .modal{box-shadow:none;background:#fff;max-width:none;padding:0;}
+  body.printing-card .card-modal img{max-width:340px;box-shadow:none;margin:0 auto;}
+}

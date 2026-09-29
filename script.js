@@ -46,22 +46,22 @@
     var res = await sb.from("members")
       .select("id,code,name,age,phone,position,join_date,attendance(date,present),ratings(date,score,note)")
       .order("join_date", { ascending: false });
-    if(res.error){ showToast("تعذر تحميل بيانات الأعضاء — تأكد من الاتصال بالإنترنت", true); return []; }
+    if(res.error){ showToast("تعذر تحميل بيانات الأعضاء — تأكد من الاتصال بالإنترنت", true); return null; }
     return res.data.map(function(m){
       return { id:m.id, code:m.code, name:m.name, age:m.age, phone:m.phone, position:m.position,
         joinDate:m.join_date, attendance:m.attendance||[], ratings:m.ratings||[] };
     });
   }
   async function refreshAll(){
-    members = await fetchMembers();
+    var list = await fetchMembers(); if(!list) return; members = list;
     renderAll();
   }
   function setupRealtime(){
     if(realtimeChannel) return;
     realtimeChannel = sb.channel("members-sync")
-      .on("postgres_changes", { event:"*", schema:"public", table:"members" }, function(){ refreshAll(); })
-      .on("postgres_changes", { event:"*", schema:"public", table:"attendance" }, function(){ refreshAll(); renderTrackAtt(); })
-      .on("postgres_changes", { event:"*", schema:"public", table:"ratings" }, function(){ refreshAll(); renderTrackRate(); })
+      .on("postgres_changes", { event:"*", schema:"public", table:"members" }, scheduleRefresh)
+      .on("postgres_changes", { event:"*", schema:"public", table:"attendance" }, scheduleRefresh)
+      .on("postgres_changes", { event:"*", schema:"public", table:"ratings" }, scheduleRefresh)
       .subscribe();
   }
   function teardownRealtime(){
@@ -133,7 +133,7 @@
 
   document.getElementById("logoutBtn").addEventListener("click", async function(){
     teardownRealtime();
-    try{ await sb.auth.signOut(); }catch(e){}
+    showLogin(); members = []; try{ await sb.auth.signOut(); }catch(e){}
     members = [];
     showLogin();
     showToast("تم تسجيل الخروج");
@@ -207,11 +207,23 @@
 
   /* ---------- البحث ---------- */
   var searchInput = document.getElementById("searchInput");
-  searchInput.addEventListener("input", function(){ renderList(); });
+  var searchTimer;
+  searchInput.addEventListener("input", function(){ clearTimeout(searchTimer); searchTimer = setTimeout(renderList, 120); });
+  searchInput.addEventListener("keydown", function(e){ // ماسح باركود USB بيكتب الكود ويضغط Enter
+    if(e.key !== "Enter") return;
+    var v = searchInput.value.trim();
+    if(/^HRF-\d+$/i.test(v)){ registerByCode(v); searchInput.value = ""; renderList(); }
+  });
 
   /* ---------- العرض ---------- */
   var memberListEl = document.getElementById("memberList");
   var emptyState = document.getElementById("emptyState");
+  memberListEl.addEventListener("click", function(e){
+    var b = e.target.closest("button[data-id]"); if(!b) return;
+    var id = b.dataset.id, c = b.classList;
+    if(c.contains("track")) openTrack(id); else if(c.contains("edit")) openEdit(id);
+    else if(c.contains("del")) openDelete(id); else if(c.contains("qr")) openCard(id);
+  });
 
   function initials(name){
     var parts = name.trim().split(/\s+/);
@@ -261,11 +273,12 @@
       return;
     }
 
+    var frag = document.createDocumentFragment(), todayKey = todayStr();
     filtered.forEach(function(m){
       var rate = attendanceRate(m);
       var avg = avgRating(m);
       var card = document.createElement("div");
-      card.className = "member-card";
+      card.className = "member-card" + (m.attendance.some(function(a){ return a.date === todayKey && a.present; }) ? " present-today" : "");
       card.innerHTML =
         '<div class="avatar">' + initials(m.name) + '</div>' +
         '<div class="m-info">' +
@@ -286,22 +299,15 @@
           '</div>' +
         '</div>' +
         '<div class="m-actions">' +
+          '<button class="qr" data-id="' + m.id + '" aria-label="كارنيه QR"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/></svg></button>' +
           '<button class="track" data-id="' + m.id + '" aria-label="الحضور والتقييم"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 15l2.5 2.5L16 12"/></svg></button>' +
           '<button class="edit" data-id="' + m.id + '" aria-label="تعديل"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>' +
           '<button class="del" data-id="' + m.id + '" aria-label="حذف"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>' +
         '</div>';
-      memberListEl.appendChild(card);
+      frag.appendChild(card);
     });
 
-    memberListEl.querySelectorAll(".track").forEach(function(btn){
-      btn.addEventListener("click", function(){ openTrack(btn.dataset.id); });
-    });
-    memberListEl.querySelectorAll(".edit").forEach(function(btn){
-      btn.addEventListener("click", function(){ openEdit(btn.dataset.id); });
-    });
-    memberListEl.querySelectorAll(".del").forEach(function(btn){
-      btn.addEventListener("click", function(){ openDelete(btn.dataset.id); });
-    });
+    memberListEl.appendChild(frag);
   }
 
   function renderStats(){
@@ -361,9 +367,9 @@
       var upd = await sb.from("members").update({ name: name, age: age, phone: phone, position: editPos.value || null }).eq("id", currentEditId);
       if(upd.error) throw upd.error;
       await refreshAll();
-      showToast("تم تحديث بيانات " + name);
+      editModalBg.classList.remove("open"); showToast("تم تحديث بيانات " + name);
     }catch(err){
-      showToast("تعذر حفظ التعديل، حاول تاني", true);
+      editErr.textContent = "تعذر حفظ التعديل، حاول تاني"; return;
     }
     editModalBg.classList.remove("open");
   });
@@ -459,15 +465,15 @@
     }).join("") : '<p class="hist-empty">لا يوجد سجل حضور بعد</p>';
   }
 
-  function renderTrackRate(){
+  function renderTrackRate(keepInput){
     var m = currentTrackMember(); if(!m || !trackModalBg.classList.contains("open")) return;
     var avg = avgRating(m);
     ratingAvgNum.textContent = avg === null ? "—" : (avg + "/10");
     var today = todayStr();
     var rec = m.ratings.find(function(r){ return r.date === today; });
-    ratingScore.value = rec ? rec.score : 7;
+    if(!keepInput) ratingScore.value = rec ? rec.score : 7;
     ratingScoreOut.textContent = ratingScore.value;
-    ratingNote.value = rec ? (rec.note || "") : "";
+    if(!keepInput){ ratingNote.value = rec ? (rec.note || "") : ""; ratingScoreOut.textContent = ratingScore.value; }
     var sorted = m.ratings.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
     ratingHistory.innerHTML = sorted.length ? sorted.map(function(r){
       return '<div class="hist-row rate-row"><span>' + fmtDay(r.date) + '</span><span class="hist-badge score">' + r.score + '/10</span>' +
@@ -581,6 +587,176 @@
       reader.readAsText(file);
     });
   }
+
+  /* ---------- تحميل مكتبات الـQR عند الحاجة فقط (تشغيل أسرع للموقع) ---------- */
+  var libCache = {};
+  function loadLib(src){
+    if(!libCache[src]) libCache[src] = new Promise(function(res, rej){
+      var s = document.createElement("script"); s.src = src; s.onload = res;
+      s.onerror = function(){ delete libCache[src]; rej(new Error("load")); };
+      document.head.appendChild(s);
+    });
+    return libCache[src];
+  }
+  var QR_GEN = "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js";
+  var QR_SCAN = "https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js";
+
+  /* تحديث مؤجّل: يجمع أحداث التزامن المتتالية في تحميل واحد بدل تحميل لكل حدث */
+  var refreshTimer;
+  function scheduleRefresh(){
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(async function(){ await refreshAll(); renderTrackAtt(); renderTrackRate(true); }, 400);
+  }
+
+  var actx;
+  function beep(ok){
+    try{
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = ok ? 880 : 220; g.gain.value = 0.08;
+      o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + (ok ? 0.12 : 0.3));
+    }catch(e){}
+    if(navigator.vibrate) navigator.vibrate(ok ? 60 : [80, 60, 80]);
+  }
+
+  /* ---------- ماسح الكارنيه: تسجيل الحضور بمسح الـQR مباشرة ---------- */
+  var scanBg = document.getElementById("scanModalBg");
+  var scanResult = document.getElementById("scanResult");
+  var scanCountEl = document.getElementById("scanCount");
+  var scanManual = document.getElementById("scanManual");
+  var scanner = null, scanBusy = false, scanCount = 0, lastScan = { code:"", t:0 };
+
+  function feedback(type, msg){
+    scanResult.className = "scan-result " + type;
+    scanResult.textContent = msg;
+    if(!scanBg.classList.contains("open")) showToast(msg, type === "err");
+  }
+
+  async function registerByCode(raw){
+    var code = String(raw || "").trim().toUpperCase();
+    if(!code || scanBusy) return;
+    var now = Date.now();
+    if(code === lastScan.code && now - lastScan.t < 3000) return; // منع تكرار نفس المسح
+    lastScan = { code: code, t: now };
+    var m = members.find(function(x){ return (x.code || "").toUpperCase() === code; });
+    if(!m){ feedback("err", "كود غير موجود: " + code); beep(false); return; }
+    var today = todayStr();
+    var rec = m.attendance.find(function(a){ return a.date === today; });
+    if(rec && rec.present){ feedback("warn", m.name + " — حضوره متسجل النهارده بالفعل"); beep(false); return; }
+    scanBusy = true;
+    try{
+      var up = await sb.from("attendance").upsert({ member_id: m.id, date: today, present: true }, { onConflict: "member_id,date" });
+      if(up.error) throw up.error;
+      m.attendance = m.attendance.filter(function(a){ return a.date !== today; }).concat([{ date: today, present: true }]);
+      scanCount++; scanCountEl.textContent = scanCount;
+      renderStats(); renderList();
+      feedback("ok", "اتسجل حضور " + m.name + " ✓");
+      beep(true);
+    }catch(err){
+      lastScan.t = 0;
+      feedback("err", "تعذر حفظ الحضور — تأكد من الإنترنت وامسح تاني");
+      beep(false);
+    }
+    scanBusy = false;
+  }
+
+  async function openScan(){
+    scanBg.classList.add("open");
+    scanCount = 0; scanCountEl.textContent = "0";
+    scanResult.className = "scan-result"; scanResult.textContent = "جاري تشغيل الكاميرا…";
+    try{
+      await loadLib(QR_SCAN);
+      if(!scanBg.classList.contains("open")) return;
+      scanner = new Html5Qrcode("scanReader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
+      await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 230, height: 230 } },
+        function(text){ registerByCode(text); }, function(){});
+      scanResult.textContent = "وجّه الكاميرا على QR الكارنيه";
+    }catch(e){
+      scanner = null;
+      feedback("err", "تعذر تشغيل الكاميرا — اسمح للموقع باستخدامها (لازم رابط https) أو اكتب الكود بالأسفل");
+    }
+  }
+  async function closeScan(){
+    scanBg.classList.remove("open");
+    if(scanner){ var s = scanner; scanner = null; try{ await s.stop(); s.clear(); }catch(e){} }
+  }
+  document.getElementById("scanOpen").addEventListener("click", openScan);
+  document.getElementById("scanClose").addEventListener("click", closeScan);
+  scanBg.addEventListener("click", function(e){ if(e.target === scanBg) closeScan(); });
+  scanManual.addEventListener("keydown", function(e){
+    if(e.key !== "Enter") return;
+    e.preventDefault();
+    var v = scanManual.value; scanManual.value = "";
+    registerByCode(v);
+  });
+
+  /* ---------- كارنيه اللاعب (QR) : عرض / تنزيل / طباعة ---------- */
+  var cardBg = document.getElementById("cardModalBg");
+  var cardImg = document.getElementById("cardImg");
+  var cardMember = null;
+
+  function drawCard(m){
+    var W = 640, H = 900, c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    var x = c.getContext("2d");
+    x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, H);
+    var g = x.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, "#15305c"); g.addColorStop(1, "#2f5fdb");
+    x.fillStyle = g; x.fillRect(0, 0, W, 170);
+    x.textAlign = "center"; x.direction = "rtl";
+    x.fillStyle = "#ffffff"; x.font = "900 44px Cairo, Tajawal, sans-serif"; x.fillText("أكاديمية الحريف", W/2, 92);
+    x.font = "500 22px Tajawal, sans-serif"; x.fillText("كارنيه لاعب", W/2, 135);
+    var q = qrcode(0, "M"); q.addData(m.code); q.make();
+    var n = q.getModuleCount(), cell = Math.floor(400 / n), qs = cell * n, ox = Math.round((W - qs) / 2), oy = 225;
+    x.fillStyle = "#15305c";
+    for(var r = 0; r < n; r++) for(var k = 0; k < n; k++) if(q.isDark(r, k)) x.fillRect(ox + k*cell, oy + r*cell, cell, cell);
+    x.fillStyle = "#243149"; x.font = "800 40px Cairo, Tajawal, sans-serif"; x.fillText(m.name, W/2, 720, W - 80);
+    x.fillStyle = "#2f5fdb"; x.direction = "ltr"; x.font = "800 34px Cairo, Tajawal, sans-serif"; x.fillText(m.code, W/2, 782);
+    x.fillStyle = "#78859b"; x.direction = "rtl"; x.font = "500 20px Tajawal, sans-serif"; x.fillText("امسح الكود لتسجيل الحضور", W/2, 850);
+    return c;
+  }
+  async function openCard(id){
+    var m = members.find(function(x){ return x.id === id; });
+    if(!m || !m.code) return;
+    cardMember = m;
+    cardImg.removeAttribute("src");
+    cardBg.classList.add("open");
+    try{
+      await loadLib(QR_GEN);
+      if(document.fonts && document.fonts.load){
+        await Promise.race([document.fonts.load("900 44px Cairo"), new Promise(function(r){ setTimeout(r, 1500); })]);
+      }
+      cardImg.src = drawCard(m).toDataURL("image/png");
+    }catch(e){
+      cardBg.classList.remove("open");
+      showToast("تعذر إنشاء الكارنيه — تأكد من الإنترنت وحاول تاني", true);
+    }
+  }
+  document.getElementById("cardClose").addEventListener("click", function(){ cardBg.classList.remove("open"); });
+  cardBg.addEventListener("click", function(e){ if(e.target === cardBg) cardBg.classList.remove("open"); });
+  document.getElementById("cardDownload").addEventListener("click", function(){
+    if(!cardImg.src || !cardMember) return;
+    var a = document.createElement("a");
+    a.href = cardImg.src; a.download = "card-" + cardMember.code + ".png";
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  document.getElementById("cardPrint").addEventListener("click", function(){
+    if(!cardImg.src) return;
+    document.body.classList.add("printing-card"); window.print();
+  });
+  window.addEventListener("afterprint", function(){ document.body.classList.remove("printing-card"); });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){ closeScan(); cardBg.classList.remove("open"); }
+  });
+
+  /* لو الجلسة انتهت أو اتلغت من جهاز تاني: ارجع لشاشة الدخول بدل ما الموقع يفضل فاضي */
+  [sbLocal, sbSession].forEach(function(c){
+    c.auth.onAuthStateChange(function(evt){
+      if(evt === "SIGNED_OUT" && c === sb && appView.classList.contains("active")){
+        teardownRealtime(); members = []; showLogin(); showToast("انتهت الجلسة — سجّل الدخول تاني", true);
+      }
+    });
+  });
 
   /* ---------- بدء التشغيل: استعادة الجلسة لو موجودة ---------- */
   (async function boot(){
