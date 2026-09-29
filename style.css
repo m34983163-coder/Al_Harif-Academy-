@@ -367,3 +367,35 @@ button{-webkit-tap-highlight-color:transparent;}
   body.printing-card .modal{box-shadow:none;background:#fff;max-width:none;padding:0;}
   body.printing-card .card-modal img{max-width:340px;box-shadow:none;margin:0 auto;}
 }
+
+/* ================= الإصدار 3: إصلاح زر المسح + لمسات احترافية ================= */
+.scan-cta{appearance:none;-webkit-appearance:none;color:#fff;background:linear-gradient(135deg,#15305c,#2f5fdb);position:relative;overflow:hidden;}
+.scan-cta::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.14) 50%,transparent 70%);
+  transform:translateX(-100%);animation:shine 4.5s ease-in-out infinite;pointer-events:none;}
+@keyframes shine{0%,60%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.scan-txt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.35;}
+.scan-txt b{font-size:16px;font-weight:800;}
+.scan-txt small{display:block;font-family:"Tajawal",sans-serif;font-size:11.5px;font-weight:500;opacity:.88;margin:0;}
+
+.scan-view{position:relative;}
+.scan-frame{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;}
+.scan-frame::before{content:"";width:72%;aspect-ratio:1;border-radius:18px;
+  border:2px solid rgba(255,255,255,.85);box-shadow:0 0 0 999px rgba(5,10,20,.35);}
+.scan-tools{display:flex;gap:10px;margin-bottom:12px;}
+.scan-tools .bk-btn{min-width:0;height:44px;font-size:12px;font-family:inherit;}
+.scan-tools label.bk-btn{cursor:pointer;}
+.scan-result{transition:background .2s,color .2s,transform .2s;}
+.scan-result.ok{transform:scale(1.02);}
+
+body.modal-open{overflow:hidden;}
+button:disabled{opacity:.6;cursor:not-allowed;transform:none!important;}
+.btn-main:disabled{filter:grayscale(.3);}
+.member-card{transition:box-shadow .2s ease,transform .2s ease;}
+.member-card:hover{transform:translateY(-1px);}
+.m-actions button:active{transform:scale(.92);}
+.m-actions button{transition:color .2s,transform .15s,box-shadow .2s;}
+.stat-card{transition:transform .2s ease;}
+.stat-card:hover{transform:translateY(-2px);}
+.toast{z-index:60;}
+::selection{background:var(--blue);color:#fff;}
+@media (prefers-reduced-motion: reduce){.scan-cta::after{animation:none!important;}}

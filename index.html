@@ -6,12 +6,13 @@
 <title>أكاديمية الحريف لكرة القدم</title>
 
 <meta name="theme-color" content="#eef1f6">
+<meta name="description" content="نظام إدارة أعضاء أكاديمية الحريف لكرة القدم">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@800;900&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -82,7 +83,7 @@
   <div class="wrap">
     <button type="button" class="scan-cta" id="scanOpen">
       <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/></svg>
-      <span>مسح كارنيه وتسجيل الحضور<small>وجّه الكاميرا على الـQR — من غير بحث</small></span>
+      <span class="scan-txt"><b>مسح كارنيه وتسجيل الحضور</b><small>وجّه الكاميرا على الـQR — من غير بحث</small></span>
     </button>
     <div class="stats">
       <div class="stat-card">
@@ -298,7 +299,13 @@
     </button>
     <h3>مسح كارنيه اللاعب</h3>
     <p class="code-line">الحضور بيتسجل تلقائي أول ما الكاميرا تقرأ الكود</p>
-    <div class="scan-view"><div id="scanReader"></div></div>
+    <div class="scan-view"><div id="scanReader"></div><div class="scan-frame" aria-hidden="true"></div></div>
+    <div class="scan-tools">
+      <button type="button" class="bk-btn" id="scanRetry">إعادة تشغيل الكاميرا</button>
+      <label class="bk-btn" for="scanFile">مسح من صورة
+        <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+      </label>
+    </div>
     <div class="scan-result" id="scanResult" aria-live="polite">جاهز للمسح</div>
     <div class="scan-manual"><input type="text" id="scanManual" placeholder="أو اكتب الكود (HRF-0001) واضغط Enter" autocomplete="off"></div>
     <p class="scan-count">اتسجل في الجلسة دي: <b id="scanCount">0</b></p>
@@ -323,6 +330,6 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="script.js"></script>
+<script defer src="script.js?v=3"></script>
 </body>
 </html>

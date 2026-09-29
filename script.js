@@ -10,8 +10,8 @@
   /* ---------- إعدادات Supabase ---------- */
   var SUPABASE_URL = "https://vykoloahxpyryunyjsko.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable_W4cm7U5Xbq65SSRgTghe2w_D4MkrYdv";
-  var sbLocal = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: window.localStorage, persistSession: true, autoRefreshToken: true } });
-  var sbSession = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true } });
+  var sbLocal = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storageKey: "harif-auth", storage: window.localStorage, persistSession: true, autoRefreshToken: true } });
+  var sbSession = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storageKey: "harif-auth-session", storage: window.sessionStorage, persistSession: true, autoRefreshToken: true } });
   var sb = sbLocal; // العميل النشط حالياً — يتحدد فعلياً عند الدخول أو عند استعادة الجلسة
   var realtimeChannel = null;
 
@@ -82,6 +82,7 @@
     appView.classList.add("active");
     await refreshAll();
     setupRealtime();
+    preloadQr();
   }
   function showLogin(){
     appView.classList.remove("active");
@@ -133,7 +134,7 @@
 
   document.getElementById("logoutBtn").addEventListener("click", async function(){
     teardownRealtime();
-    showLogin(); members = []; try{ await sb.auth.signOut(); }catch(e){}
+    try{ await sb.auth.signOut(); }catch(e){}
     members = [];
     showLogin();
     showToast("تم تسجيل الخروج");
@@ -258,7 +259,7 @@
     var filtered = members.filter(function(m){
       if(!q) return true;
       return m.name.toLowerCase().indexOf(q) !== -1 ||
-             m.phone.indexOf(q) !== -1 ||
+             (m.phone || "").indexOf(q) !== -1 ||
              (m.code || "").toLowerCase().indexOf(q) !== -1;
     });
 
@@ -285,7 +286,7 @@
           '<div class="m-top"><span class="m-name">' + escapeHtml(m.name) + '</span><span class="code-badge">' + escapeHtml(m.code || "") + '</span></div>' +
           '<div class="m-meta">' +
             '<span><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>' + m.age + ' سنة</span>' +
-            '<span><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.7a2 2 0 01-.4 2.1L8 9.9a16 16 0 006 6l1.4-1.4a2 2 0 012.1-.4c.9.3 1.8.5 2.7.6a2 2 0 011.8 2z"/></svg>' + escapeHtml(m.phone) + '</span>' +
+            '<span><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.7a2 2 0 01-.4 2.1L8 9.9a16 16 0 006 6l1.4-1.4a2 2 0 012.1-.4c.9.3 1.8.5 2.7.6a2 2 0 011.8 2z"/></svg>' + escapeHtml(m.phone || "") + '</span>' +
             '<span><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' + fmtDate(m.joinDate) + '</span>' +
           '</div>' +
           '<div class="m-chips">' +
@@ -590,16 +591,35 @@
 
   /* ---------- تحميل مكتبات الـQR عند الحاجة فقط (تشغيل أسرع للموقع) ---------- */
   var libCache = {};
-  function loadLib(src){
-    if(!libCache[src]) libCache[src] = new Promise(function(res, rej){
-      var s = document.createElement("script"); s.src = src; s.onload = res;
-      s.onerror = function(){ delete libCache[src]; rej(new Error("load")); };
-      document.head.appendChild(s);
+  function loadOne(src){
+    return new Promise(function(res, rej){
+      var t = document.createElement("script"); t.src = src; t.async = true;
+      t.onload = res; t.onerror = function(){ t.remove(); rej(new Error("load")); };
+      document.head.appendChild(t);
     });
-    return libCache[src];
   }
-  var QR_GEN = "https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js";
-  var QR_SCAN = "https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js";
+  function loadLib(srcs, check){
+    var key = srcs.join("|");
+    if(!libCache[key]) libCache[key] = (async function(){
+      if(check()) return;
+      for(var i = 0; i < srcs.length; i++){
+        try{ await loadOne(srcs[i]); if(check()) return; }catch(e){}
+      }
+      throw new Error("lib");
+    })().catch(function(e){ delete libCache[key]; throw e; });
+    return libCache[key];
+  }
+  var QR_GEN = ["https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js",
+                "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"];
+  var QR_SCAN = ["https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js",
+                 "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"];
+  function loadGen(){ return loadLib(QR_GEN, function(){ return typeof window.qrcode === "function"; }); }
+  function loadScan(){ return loadLib(QR_SCAN, function(){ return typeof window.Html5Qrcode === "function"; }); }
+  /* تحميل مسبق في الخلفية بعد الدخول عشان الماسح والكارنيه يفتحوا فوراً */
+  function preloadQr(){
+    var go = function(){ loadScan().catch(function(){}); loadGen().catch(function(){}); };
+    if(window.requestIdleCallback) requestIdleCallback(go, { timeout: 4000 }); else setTimeout(go, 1500);
+  }
 
   /* تحديث مؤجّل: يجمع أحداث التزامن المتتالية في تحميل واحد بدل تحميل لكل حدث */
   var refreshTimer;
@@ -633,7 +653,9 @@
   }
 
   async function registerByCode(raw){
-    var code = String(raw || "").trim().toUpperCase();
+    var txt = String(raw || "").replace(/[\u0660-\u0669]/g, function(d){ return d.charCodeAt(0) - 0x660; }).trim().toUpperCase();
+    var hit = txt.match(/HRF\s*-?\s*(\d+)/);
+    var code = hit ? "HRF-" + hit[1].padStart(4, "0") : txt;
     if(!code || scanBusy) return;
     var now = Date.now();
     if(code === lastScan.code && now - lastScan.t < 3000) return; // منع تكرار نفس المسح
@@ -660,26 +682,70 @@
     scanBusy = false;
   }
 
-  async function openScan(){
-    scanBg.classList.add("open");
-    scanCount = 0; scanCountEl.textContent = "0";
+  var scanToken = 0;
+  async function stopScanner(){
+    var sc = scanner; scanner = null;
+    if(sc){ try{ await sc.stop(); }catch(e){} try{ sc.clear(); }catch(e){} }
+  }
+  async function startScanner(){
+    var token = ++scanToken;
+    await stopScanner();
     scanResult.className = "scan-result"; scanResult.textContent = "جاري تشغيل الكاميرا…";
     try{
-      await loadLib(QR_SCAN);
-      if(!scanBg.classList.contains("open")) return;
-      scanner = new Html5Qrcode("scanReader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
-      await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 230, height: 230 } },
-        function(text){ registerByCode(text); }, function(){});
+      await loadScan();
+      if(token !== scanToken || !scanBg.classList.contains("open")) return;
+      var sc = new Html5Qrcode("scanReader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
+      var cfg = { fps: 12, qrbox: function(w, h){ var n = Math.floor(Math.min(w, h) * 0.72); return { width: n, height: n }; } };
+      var onOk = function(text){ registerByCode(text); };
+      try{
+        await sc.start({ facingMode: "environment" }, cfg, onOk, function(){});
+      }catch(e1){
+        var cams = await Html5Qrcode.getCameras();
+        if(!cams || !cams.length) throw e1;
+        var back = cams.find(function(c){ return /back|rear|environment|خلف/i.test(c.label); }) || cams[cams.length - 1];
+        await sc.start(back.id, cfg, onOk, function(){});
+      }
+      if(token !== scanToken || !scanBg.classList.contains("open")){ try{ await sc.stop(); sc.clear(); }catch(e){} return; }
+      scanner = sc;
       scanResult.textContent = "وجّه الكاميرا على QR الكارنيه";
     }catch(e){
+      if(token !== scanToken) return;
       scanner = null;
-      feedback("err", "تعذر تشغيل الكاميرا — اسمح للموقع باستخدامها (لازم رابط https) أو اكتب الكود بالأسفل");
+      var denied = e && /permission|notallowed|denied/i.test(String(e.name || e));
+      feedback("err", denied
+        ? "الكاميرا مقفولة — اسمح للموقع باستخدامها من إعدادات المتصفح ثم اضغط إعادة التشغيل"
+        : "تعذر تشغيل الكاميرا — لازم رابط https. تقدر تمسح من صورة أو تكتب الكود بالأسفل");
     }
   }
-  async function closeScan(){
-    scanBg.classList.remove("open");
-    if(scanner){ var s = scanner; scanner = null; try{ await s.stop(); s.clear(); }catch(e){} }
+  function openScan(){
+    scanBg.classList.add("open");
+    document.body.classList.add("modal-open");
+    scanCount = 0; scanCountEl.textContent = "0";
+    startScanner();
   }
+  async function closeScan(){
+    scanToken++;
+    scanBg.classList.remove("open");
+    document.body.classList.remove("modal-open");
+    await stopScanner();
+  }
+  document.getElementById("scanRetry").addEventListener("click", startScanner);
+  document.getElementById("scanFile").addEventListener("change", async function(e){
+    var f = e.target.files && e.target.files[0]; e.target.value = "";
+    if(!f) return;
+    scanResult.className = "scan-result"; scanResult.textContent = "جاري قراءة الصورة…";
+    try{
+      await loadScan();
+      await stopScanner();
+      var tmp = new Html5Qrcode("scanReader", { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
+      var text = await tmp.scanFile(f, false);
+      try{ tmp.clear(); }catch(x){}
+      lastScan = { code: "", t: 0 };
+      await registerByCode(text);
+    }catch(err){
+      feedback("err", "مفيش QR واضح في الصورة — جرّب صورة أقرب وأوضح");
+    }
+  });
   document.getElementById("scanOpen").addEventListener("click", openScan);
   document.getElementById("scanClose").addEventListener("click", closeScan);
   scanBg.addEventListener("click", function(e){ if(e.target === scanBg) closeScan(); });
@@ -722,7 +788,7 @@
     cardImg.removeAttribute("src");
     cardBg.classList.add("open");
     try{
-      await loadLib(QR_GEN);
+      await loadGen();
       if(document.fonts && document.fonts.load){
         await Promise.race([document.fonts.load("900 44px Cairo"), new Promise(function(r){ setTimeout(r, 1500); })]);
       }
@@ -746,7 +812,10 @@
   });
   window.addEventListener("afterprint", function(){ document.body.classList.remove("printing-card"); });
   document.addEventListener("keydown", function(e){
-    if(e.key === "Escape"){ closeScan(); cardBg.classList.remove("open"); }
+    if(e.key === "Escape"){
+      closeScan(); cardBg.classList.remove("open");
+      [editModalBg, delModalBg, trackModalBg].forEach(function(m){ m.classList.remove("open"); });
+    }
   });
 
   /* لو الجلسة انتهت أو اتلغت من جهاز تاني: ارجع لشاشة الدخول بدل ما الموقع يفضل فاضي */
